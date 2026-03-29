@@ -56,15 +56,8 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert initial test data
-INSERT INTO users (name, email, age) VALUES 
-('John Doe', 'john@email.com', 25),
-('Jane Smith', 'jane@email.com', 30),
-('Bob Johnson', 'bob@email.com', 35),
-('Alice Brown', 'alice@email.com', 28),
-('Charlie Wilson', 'charlie@email.com', 42);
-
--- Generate 5 million records using MariaDB compatible method
+-- All 5 million users follow consistent pattern:
+-- Insert 5 million records using MariaDB compatible method
 INSERT INTO users (name, email, age)
 SELECT 
     CONCAT('User', n) as name,
