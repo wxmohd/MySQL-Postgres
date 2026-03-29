@@ -259,7 +259,7 @@ Performance Improvement: PostgreSQL 55% faster overall
 simple-database-comparison/
 ├── README.md                          # This comprehensive guide
 ├── SimpleTest.java                    # Java performance test
-├── setup.sql                         # Original small dataset setup
+├── SimpleTest.class                   # Compiled Java class
 ├── mariadb-java-client-3.1.4.jar    # MariaDB JDBC driver
 └── postgresql-42.6.0.jar            # PostgreSQL JDBC driver
 
