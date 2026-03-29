@@ -4,22 +4,19 @@ import java.util.List;
 
 public class SimpleTest {
     
-    // Database connection details
     private static final String MYSQL_URL = "jdbc:mariadb://localhost:3306/test_db";
     private static final String POSTGRES_URL = "jdbc:postgresql://localhost:5432/test_db";
-    private static final String USERNAME = "root"; // Change as needed
-    private static final String PASSWORD = ""; // Change as needed
+    private static final String USERNAME = "root";
+    private static final String PASSWORD = ""; 
     
     public static void main(String[] args) {
         System.out.println("=== Simple MySQL vs PostgreSQL Performance Test ===\n");
         
-        // Test MySQL
         System.out.println("Testing MySQL:");
         testDatabase("MySQL", MYSQL_URL, USERNAME, PASSWORD);
         
         System.out.println("\n" + "=".repeat(50) + "\n");
         
-        // Test PostgreSQL  
         System.out.println("Testing PostgreSQL:");
         testDatabase("PostgreSQL", POSTGRES_URL, "postgres", "postgres");
         
@@ -30,22 +27,18 @@ public class SimpleTest {
         try {
             Connection conn = DriverManager.getConnection(url, user, pass);
             
-            // Test 1: Simple SELECT
             long startTime = System.currentTimeMillis();
             simpleSelect(conn);
             long simpleTime = System.currentTimeMillis() - startTime;
             
-            // Test 2: COUNT query
             startTime = System.currentTimeMillis();
             countUsers(conn);
             long countTime = System.currentTimeMillis() - startTime;
             
-            // Test 3: Filtered query
             startTime = System.currentTimeMillis();
             findUsersByAge(conn, 30);
             long filterTime = System.currentTimeMillis() - startTime;
             
-            // Print results
             System.out.println("  Simple SELECT: " + simpleTime + "ms");
             System.out.println("  COUNT query: " + countTime + "ms");
             System.out.println("  Filtered query: " + filterTime + "ms");
