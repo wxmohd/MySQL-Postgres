@@ -4,11 +4,17 @@ A comprehensive performance comparison between MySQL (MariaDB) and PostgreSQL us
 
 ## Final Results Summary
 
-**With 5 Million Records:**
-- **PostgreSQL: 218ms total (55% faster overall)**
-- **MySQL: 484ms total**
+**Performance varies by operation type:**
 
-PostgreSQL showed significant advantages at scale, particularly for COUNT operations (198ms vs 461ms).
+**Limited Dataset (10 records):**
+- **PostgreSQL: 118ms total (73% faster overall)**
+- **MySQL: 442ms total**
+
+**Full Dataset (5 million records):**
+- **MySQL: 2,306ms total (6% faster overall)**
+- **PostgreSQL: 2,458ms total**
+
+**Key Finding:** Database performance depends on workload - PostgreSQL excels at aggregation, MySQL excels at large data retrieval.
 
 ---
 
@@ -159,49 +165,68 @@ SELECT COUNT(*) as total_users FROM users;
 
 ## Performance Results
 
-### Small Dataset (1,005 records):
-```
-MySQL:    Total time: 19ms
-PostgreSQL: Total time: 20ms
-Difference: Negligible (1ms)
-```
-
-### Large Dataset (5,000,005 records):
+### Small Dataset (LIMIT 10 records):
 ```
 MySQL:
-  Simple SELECT: 18ms
-  COUNT query: 461ms
+  Simple SELECT: 15ms
+  COUNT query: 422ms
   Filtered query: 5ms
-  Total time: 484ms
+  Total time: 442ms
 
 PostgreSQL:
-  Simple SELECT: 17ms
-  COUNT query: 198ms
-  Filtered query: 3ms
-  Total time: 218ms
+  Simple SELECT: 14ms
+  COUNT query: 102ms
+  Filtered query: 2ms
+  Total time: 118ms
 
-Performance Improvement: PostgreSQL 55% faster overall
+PostgreSQL 73% faster overall (442ms vs 118ms)
+```
+
+### Large Dataset (All 5,000,000 records):
+```
+MySQL:
+  Simple SELECT: 1,805ms (retrieving all 5M records)
+  COUNT query: 496ms
+  Filtered query: 5ms
+  Total time: 2,306ms
+
+PostgreSQL:
+  Simple SELECT: 2,352ms (retrieving all 5M records)
+  COUNT query: 105ms
+  Filtered query: 1ms
+  Total time: 2,458ms
+
+MySQL 6% faster overall (2,306ms vs 2,458ms)
 ```
 
 ---
 
 ## Key Insights
 
-### Scale Matters
-- **Small datasets**: Performance differences are negligible
-- **Large datasets**: PostgreSQL shows significant advantages
+### Performance Depends on Operation Type
+The results reveal that **no database is universally faster** - performance depends on the specific workload:
 
-### PostgreSQL Advantages at Scale:
-- **COUNT operations**: 57% faster (198ms vs 461ms)
-- **Filtered queries**: 40% faster (3ms vs 5ms)
-- **Superior query optimization** for large datasets
-- **Better MVCC implementation**
+### PostgreSQL Excels At:
+- **COUNT operations**: 79% faster (105ms vs 496ms)
+- **Filtered queries**: 80% faster (1ms vs 5ms)
+- **Aggregation operations**: Superior query optimizer
+- **Complex analytical queries**: Advanced MVCC implementation
+- **Small result sets**: Optimized for limited data retrieval
 
-### MySQL/MariaDB Strengths:
-- **Simple operations**: Virtually identical performance
-- **Easier setup and configuration**
-- **Lower memory footprint**
-- **Better for simple web applications**
+### MySQL Excels At:
+- **Large data retrieval**: 23% faster for full dataset (1,805ms vs 2,352ms)
+- **Simple SELECT operations**: Less overhead for basic queries
+- **Web application workloads**: Optimized for typical web patterns
+- **Straightforward operations**: Simpler storage engine = faster execution
+
+### Workload-Specific Recommendations:
+- **Choose PostgreSQL for**: Analytics, reporting, complex queries, COUNT-heavy operations
+- **Choose MySQL for**: Data export, full table scans, simple web applications, basic CRUD operations
+
+### Scale Impact:
+- **Limited datasets (10 records)**: PostgreSQL 73% faster overall
+- **Full datasets (5M records)**: MySQL 6% faster overall
+- **Operation type matters more than database choice** at scale
 
 ---
 

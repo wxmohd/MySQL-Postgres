@@ -52,7 +52,7 @@ public class SimpleTest {
     }
     
     private static void simpleSelect(Connection conn) throws SQLException {
-        String sql = "SELECT * FROM users LIMIT 10";
+        String sql = "SELECT * FROM users";
         try (PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             

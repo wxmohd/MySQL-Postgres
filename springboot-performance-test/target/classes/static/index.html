@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL vs PostgreSQL Performance Tester</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; }
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        h2 { color: #555; margin-top: 30px; }
+        .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input, select, textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        textarea { height: 60px; resize: vertical; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 10px; }
+        button:hover { background: #0056b3; }
+        button.green { background: #28a745; }
+        button.green:hover { background: #1e7e34; }
+        button.orange { background: #fd7e14; }
+        button.orange:hover { background: #e96b02; }
+        pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 13px; white-space: pre-wrap; }
+        .result-box { margin-top: 15px; }
+        .winner { font-size: 18px; font-weight: bold; padding: 10px; border-radius: 4px; margin-top: 10px; }
+        .winner.mysql { background: #fff3cd; color: #856404; }
+        .winner.postgres { background: #d1e7dd; color: #0f5132; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .stat { background: #f8f9fa; padding: 10px; border-radius: 4px; text-align: center; }
+        .stat span { display: block; font-size: 22px; font-weight: bold; color: #007bff; }
+        .stat small { color: #888; }
+        .quick-btn { background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin: 3px; }
+        .quick-btn:hover { background: #545b62; }
+        .loading { color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<h1>MySQL vs PostgreSQL Performance Tester</h1>
+<p>Spring Boot + HikariCP Connection Pool | 5 Million Records</p>
+
+<div class="card">
+    <h2>Quick Tests</h2>
+    <button class="quick-btn" onclick="quickTest('SELECT * FROM users LIMIT 10')">SELECT 10 users</button>
+    <button class="quick-btn" onclick="quickTest('SELECT COUNT(*) FROM users')">COUNT all users</button>
+    <button class="quick-btn" onclick="quickTest('SELECT name, email FROM users WHERE age > 30 LIMIT 5')">Filter age > 30</button>
+    <button class="quick-btn" onclick="quickTest('SELECT * FROM users LIMIT 100')">SELECT 100 users</button>
+    <button class="quick-btn" onclick="quickTest('SELECT AVG(age) FROM users')">AVG age</button>
+    <button class="quick-btn" onclick="quickTest('SELECT age, COUNT(*) FROM users GROUP BY age ORDER BY age')">GROUP BY age</button>
+</div>
+
+<div class="card">
+    <h2>Compare Both Databases</h2>
+    <label>SQL Query:</label>
+    <textarea id="compareSql" placeholder="Enter SQL query...">SELECT COUNT(*) FROM users</textarea>
+    <button class="green" onclick="compareDBs()">Run Comparison</button>
+    <div id="compareResult" class="result-box"></div>
+</div>
+
+<div class="card">
+    <h2>Single Database Query</h2>
+    <label>Database:</label>
+    <select id="singleDb">
+        <option value="mysql">MySQL (MariaDB)</option>
+        <option value="postgres">PostgreSQL</option>
+    </select>
+    <label>SQL Query:</label>
+    <textarea id="singleSql" placeholder="Enter SQL query...">SELECT * FROM users LIMIT 10</textarea>
+    <button onclick="runSingle()">Run Query</button>
+    <div id="singleResult" class="result-box"></div>
+</div>
+
+<div class="card">
+    <h2>Concurrency Test (HikariCP)</h2>
+    <p style="color:#666; font-size:13px">Simulates multiple users hitting the database simultaneously. Tests HikariCP connection pool under load.</p>
+    <div class="grid">
+        <div>
+            <label>Database:</label>
+            <select id="concDb">
+                <option value="mysql">MySQL (MariaDB)</option>
+                <option value="postgres">PostgreSQL</option>
+            </select>
+        </div>
+        <div>
+            <label>Number of Threads:</label>
+            <input type="number" id="threads" value="10" min="1" max="20">
+        </div>
+    </div>
+    <label>SQL Query:</label>
+    <textarea id="concSql">SELECT COUNT(*) FROM users</textarea>
+    <button class="orange" onclick="runConcurrency()">Run Concurrency Test</button>
+    <div id="concResult" class="result-box"></div>
+</div>
+
+<div class="card">
+    <h2>Full Test Suite</h2>
+    <p style="color:#666; font-size:13px">Runs all performance tests automatically: SELECT, COUNT, filtered query, and concurrency for both databases.</p>
+    <button class="green" onclick="runAllTests()">Run All Tests</button>
+    <div id="allResult" class="result-box"></div>
+</div>
+
+<script>
+    const BASE = 'http://localhost:8080/api';
+
+    function quickTest(sql) {
+        document.getElementById('compareSql').value = sql;
+        compareDBs();
+    }
+
+    async function compareDBs() {
+        const sql = document.getElementById('compareSql').value.trim();
+        if (!sql) return alert('Enter a SQL query');
+        document.getElementById('compareResult').innerHTML = '<p class="loading">Running comparison...</p>';
+
+        try {
+            const res = await fetch(`${BASE}/compare?sql=${encodeURIComponent(sql)}`);
+            const data = await res.json();
+
+            const mysqlMs = data.mysqlResult.executionTimeMs;
+            const pgMs = data.postgresResult.executionTimeMs;
+            const diff = Math.abs(((mysqlMs - pgMs) / Math.min(mysqlMs, pgMs)) * 100).toFixed(1);
+            const winnerClass = data.winner === 'MySQL' ? 'mysql' : 'postgres';
+
+            document.getElementById('compareResult').innerHTML = `
+                <div class="grid">
+                    <div class="stat"><span>${mysqlMs}ms</span><small>MySQL</small></div>
+                    <div class="stat"><span>${pgMs}ms</span><small>PostgreSQL</small></div>
+                </div>
+                <div class="winner ${winnerClass}">Winner: ${data.winner} (${diff}% faster)</div>
+                <pre>${JSON.stringify(data, null, 2)}</pre>`;
+        } catch (e) {
+            document.getElementById('compareResult').innerHTML = `<pre style="color:red">Error: ${e.message}\nMake sure Spring Boot is running on port 8080</pre>`;
+        }
+    }
+
+    async function runSingle() {
+        const db = document.getElementById('singleDb').value;
+        const sql = document.getElementById('singleSql').value.trim();
+        if (!sql) return alert('Enter a SQL query');
+        document.getElementById('singleResult').innerHTML = '<p class="loading">Running query...</p>';
+
+        try {
+            const res = await fetch(`${BASE}/query?db=${db}&sql=${encodeURIComponent(sql)}`);
+            const data = await res.json();
+            document.getElementById('singleResult').innerHTML = `
+                <div class="stat" style="display:inline-block; min-width:150px"><span>${data.executionTimeMs}ms</span><small>${db} execution time</small></div>
+                <div class="stat" style="display:inline-block; min-width:150px; margin-left:10px"><span>${data.rowsReturned}</span><small>rows returned</small></div>
+                <pre>${JSON.stringify(data, null, 2)}</pre>`;
+        } catch (e) {
+            document.getElementById('singleResult').innerHTML = `<pre style="color:red">Error: ${e.message}</pre>`;
+        }
+    }
+
+    async function runConcurrency() {
+        const db = document.getElementById('concDb').value;
+        const sql = document.getElementById('concSql').value.trim();
+        const threads = document.getElementById('threads').value;
+        if (!sql) return alert('Enter a SQL query');
+        document.getElementById('concResult').innerHTML = `<p class="loading">Running ${threads} concurrent threads... this may take a moment</p>`;
+
+        try {
+            const res = await fetch(`${BASE}/concurrency?db=${db}&sql=${encodeURIComponent(sql)}&threads=${threads}`);
+            const data = await res.json();
+            document.getElementById('concResult').innerHTML = `
+                <div class="grid">
+                    <div class="stat"><span>${data.totalTimeMs}ms</span><small>Total time (${threads} threads)</small></div>
+                    <div class="stat"><span>${data.avgThreadTimeMs.toFixed(1)}ms</span><small>Avg thread time</small></div>
+                    <div class="stat"><span>${data.minThreadTimeMs}ms</span><small>Fastest thread</small></div>
+                    <div class="stat"><span>${data.maxThreadTimeMs}ms</span><small>Slowest thread</small></div>
+                </div>
+                <pre>${JSON.stringify(data, null, 2)}</pre>`;
+        } catch (e) {
+            document.getElementById('concResult').innerHTML = `<pre style="color:red">Error: ${e.message}</pre>`;
+        }
+    }
+
+    async function runAllTests() {
+        document.getElementById('allResult').innerHTML = '<p class="loading">Running all tests... this may take 30-60 seconds</p>';
+        try {
+            const res = await fetch(`${BASE}/test/all`);
+            const text = await res.text();
+            document.getElementById('allResult').innerHTML = `<pre>${text}</pre>`;
+        } catch (e) {
+            document.getElementById('allResult').innerHTML = `<pre style="color:red">Error: ${e.message}</pre>`;
+        }
+    }
+</script>
+</body>
+</html>
