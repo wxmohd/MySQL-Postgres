@@ -1,5 +1,6 @@
 package com.example.dbperformance.controller;
 
+import com.example.dbperformance.service.IdGenerationTestService;
 import com.example.dbperformance.service.QueryService;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,9 +10,11 @@ import org.springframework.web.bind.annotation.*;
 public class QueryController {
     
     private final QueryService queryService;
+    private final IdGenerationTestService idGenerationTestService;
     
-    public QueryController(QueryService queryService) {
+    public QueryController(QueryService queryService, IdGenerationTestService idGenerationTestService) {
         this.queryService = queryService;
+        this.idGenerationTestService = idGenerationTestService;
     }
     
     @GetMapping("/query")
@@ -85,5 +88,10 @@ public class QueryController {
         sb.append("  Min thread time: ").append(result.minThreadTimeMs).append("ms\n");
         sb.append("  Max thread time: ").append(result.maxThreadTimeMs).append("ms");
         return sb.toString();
+    }
+    
+    @GetMapping("/test/ids")
+    public String runIdGenerationTests(@RequestParam(defaultValue = "100") int count) {
+        return idGenerationTestService.runAllIdTests(count);
     }
 }
